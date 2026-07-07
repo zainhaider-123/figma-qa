@@ -1,5 +1,7 @@
 allowBuilds:
   '@openrouter/sdk': true
+  esbuild: true
+  puppeteer: false
   sharp: true
 ignoredBuiltDependencies:
   - sharp

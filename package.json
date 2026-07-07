@@ -7,16 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "postinstall": "node scripts/postinstall.mjs",
+    "test:qa": "node --experimental-strip-types scripts/test-puppeteer.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@openrouter/ai-sdk-provider": "^2.10.0",
+    "@sparticuz/chromium-min": "^149.0.0",
     "ai": "^7.0.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.23.0",
     "next": "16.2.10",
+    "puppeteer-core": "^25.3.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.13.0",
@@ -26,11 +30,14 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
+    "@sparticuz/chromium": "^149.0.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "puppeteer": "^25.3.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5"
   }
 }

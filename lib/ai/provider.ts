@@ -6,7 +6,7 @@ const openrouter = createOpenRouter({
 });
 
 const result = streamText({
-  model: openrouter.chat(''),
+  model: openrouter.chat('anthropic/claude-3.5-sonnet'),
   prompt: '',
 });
 
