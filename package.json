@@ -9,12 +9,14 @@
     "lint": "biome check",
     "format": "biome format --write",
     "postinstall": "node scripts/postinstall.mjs",
-    "test:qa": "node --experimental-strip-types scripts/test-puppeteer.ts"
+    "test:qa-local": "tsx scripts/test-puppeteer.ts",
+    "test:qa-db": "tsx scripts/test-save-db.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@openrouter/ai-sdk-provider": "^2.10.0",
     "@sparticuz/chromium-min": "^149.0.0",
+    "@vercel/blob": "^2.5.0",
     "ai": "^7.0.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -38,6 +40,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "drizzle-kit": "1.0.0-rc.4",
     "puppeteer": "^25.3.0",
     "tailwindcss": "^4",

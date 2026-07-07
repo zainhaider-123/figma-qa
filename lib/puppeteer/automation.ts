@@ -1,7 +1,6 @@
 import puppeteer, { type Page } from "puppeteer-core";
-import { getChromiumPath } from "../browser/index.ts";
-import { BREAKPOINTS } from "./breakpoints.ts";
-
+import { getChromiumPath } from "@/lib/browser/index";
+import { BREAKPOINTS } from "./breakpoints";
 
 export type BreakpointCategory = "desktop" | "ipad" | "mobile";
 
@@ -604,6 +603,14 @@ export async function collectQaData(
     const page = await browser.newPage();
 
     console.log("\n[1/4] Opening site at 1920x1080...");
+
+    await page.evaluateOnNewDocument(() => {
+      (window as any).__name = (target: any, value: string) => {
+        Object.defineProperty(target, "name", { value, configurable: true });
+        return target;
+      };
+    });
+
     await page.goto(url, { waitUntil: "networkidle0", timeout: 60_000 });
     await page.setViewport({ width: 1920, height: 1080 });
 
