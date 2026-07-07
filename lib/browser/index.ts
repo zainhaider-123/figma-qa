@@ -1,6 +1,3 @@
-export default function Browserless(url: string) {
-  return url;
-}
 
 // URL to the Chromium binary package hosted in /public, if not in production, use a fallback URL
 // alternatively, you can host the chromium-pack.tar file elsewhere and update the URL below

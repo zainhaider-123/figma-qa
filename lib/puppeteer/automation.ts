@@ -1,8 +1,6 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import puppeteer, { type Page } from "puppeteer-core";
-import { getChromiumPath } from "@/lib/browser";
-import { BREAKPOINTS } from "./breakpoints";
+import { getChromiumPath } from "../browser/index.ts";
+import { BREAKPOINTS } from "./breakpoints.ts";
 
 
 export type BreakpointCategory = "desktop" | "ipad" | "mobile";
@@ -13,12 +11,16 @@ export interface Breakpoint {
   category: BreakpointCategory;
 }
 
-interface QaCollectionResult {
-  outputDir: string;
-  screenshotsDir: string;
-  dataDir: string;
-  siteWide: string;
-  breakpoints: { dims: string; json: string; screenshot: string }[];
+export interface QaBreakpointResult {
+  dims: string;
+  category: BreakpointCategory;
+  data: unknown;
+  screenshot: Buffer;
+}
+
+export interface QaCollectionResult {
+  siteWide: unknown;
+  breakpoints: QaBreakpointResult[];
 }
 
 /**
@@ -41,7 +43,7 @@ interface QaCollectionResult {
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Slugify a URL's hostname the same way the bash sed did: strip scheme + www + path. */
-function slugFromUrl(url: string): string {
+export function slugFromUrl(url: string): string {
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -49,7 +51,7 @@ function slugFromUrl(url: string): string {
   }
 }
 
-function timestamp(): string {
+export function timestamp(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(
@@ -57,7 +59,7 @@ function timestamp(): string {
   )}-${p(d.getMinutes())}`;
 }
 
-function dimsLabel(bp: Breakpoint): string {
+export function dimsLabel(bp: Breakpoint): string {
   return `${bp.width}x${bp.height}`;
 }
 
@@ -572,30 +574,19 @@ async function collectBreakpoint(page: Page, bp: Breakpoint): Promise<unknown> {
 
 /**
  * Run the full QA data collection (port of example.sh) against `url`.
- * Files are written under `outputDir` (defaults to ./figma-design-qa-reports/<ts>_<slug>).
+ * Returns collected data in memory — screenshots as Buffers, JSON data as objects.
+ * The caller is responsible for persisting results to disk.
  */
 export async function collectQaData(
   url: string,
-  outputDir?: string,
 ): Promise<QaCollectionResult> {
   if (!url) throw new Error("collectQaData: url is required");
 
-  const slug = slugFromUrl(url);
-  const outDir =
-    outputDir ||
-    join(process.cwd(), "figma-design-qa-reports", `${timestamp()}_${slug}`);
-  const screenshotsDir = join(outDir, "screenshots");
-  const dataDir = join(outDir, "data");
-  await mkdir(screenshotsDir, { recursive: true });
-  await mkdir(dataDir, { recursive: true });
-
   console.log("=== QA Collection Start ===");
   console.log("Site:", url);
-  console.log("Output:", outDir);
 
   const executablePath = await getChromiumPath();
 
-  // Browserless / @sparticuz/chromium on Vercel needs these flags.
   const browser = await puppeteer.launch({
     executablePath,
     headless: true,
@@ -607,66 +598,48 @@ export async function collectQaData(
     ],
   });
 
-  const breakpoints: QaCollectionResult["breakpoints"] = [];
-  let siteWidePath = "";
+  const breakpoints: QaBreakpointResult[] = [];
 
   try {
     const page = await browser.newPage();
 
-    // ── Step 1: Open the page ─────────────────────────────────────────
     console.log("\n[1/4] Opening site at 1920x1080...");
     await page.goto(url, { waitUntil: "networkidle0", timeout: 60_000 });
     await page.setViewport({ width: 1920, height: 1080 });
 
     console.log("        Scrolling to bottom to trigger lazy content...");
     await scrollToBottom(page);
-    await wait(2000); // let animations settle after scroll
+    await wait(2000);
 
-    // ── Step 2: Site-wide checks ──────────────────────────────────────
     console.log("[2/4] Collecting site-wide data...");
     const siteWide = await collectSiteWide(page);
-    siteWidePath = join(dataDir, "site-wide.json");
-    await writeFile(siteWidePath, JSON.stringify(siteWide, null, 2), "utf8");
 
-    // ── Step 3: Responsive breakpoints ───────────────────────────────
     console.log("[3/4] Testing responsive breakpoints...");
     for (const bp of BREAKPOINTS) {
       const dims = dimsLabel(bp);
-      console.log(`  \u2192 ${dims} (${bp.category})`);
+      console.log(`  → ${dims} (${bp.category})`);
 
       await page.setViewport({ width: bp.width, height: bp.height });
-      await wait(1500); // allow responsive CSS / entrance animations to settle
+      await wait(1500);
 
       await scrollToBottom(page);
       await wait(1500);
 
-      const shotPath = join(screenshotsDir, `${dims}.png`);
-      await page.screenshot({ path: shotPath, fullPage: true });
+      const screenshot = await page.screenshot({ fullPage: true }) as Buffer;
 
       const bpData = await collectBreakpoint(page, bp);
-      const bpPath = join(dataDir, `bp-${dims}.json`);
-      await writeFile(bpPath, JSON.stringify(bpData, null, 2), "utf8");
 
-      breakpoints.push({ dims, json: bpPath, screenshot: shotPath });
+      breakpoints.push({ dims, category: bp.category, data: bpData, screenshot });
     }
 
-    // ── Step 4: Close ─────────────────────────────────────────────────
     console.log("[4/4] Closing browser...");
+
+    console.log("\n=== QA Collection Complete ===");
+
+    return { siteWide, breakpoints };
   } finally {
     await browser.close().catch(() => { });
   }
-
-  console.log("\n=== QA Collection Complete ===");
-  console.log("Raw data saved to:", dataDir);
-  console.log("Screenshots saved to:", screenshotsDir);
-
-  return {
-    outputDir: outDir,
-    screenshotsDir,
-    dataDir,
-    siteWide: siteWidePath,
-    breakpoints,
-  };
 }
 
 export default collectQaData;
