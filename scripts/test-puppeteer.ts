@@ -9,25 +9,46 @@
  * If no URL is passed, defaults to a small, stable page so you can sanity-check
  * the pipeline quickly.
  */
+import { mkdir, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 // @ts-expect-error - .ts extension required by Node --experimental-strip-types
-import { collectQaData } from "../lib/puppeteer/index.ts";
+import { collectQaData, slugFromUrl, timestamp } from "../lib/puppeteer/automation.ts";
 
 async function main() {
   const url = process.argv[2] || "https://example.com";
-  const outputDir = process.argv[3];
+  const outputDir =
+    process.argv[3] ||
+    join(process.cwd(), "figma-design-qa-reports", `${timestamp()}_${slugFromUrl(url)}`);
 
   console.log("Running collectQaData against:", url);
   const start = Date.now();
 
   try {
-    const result = await collectQaData(url, outputDir);
+    const result = await collectQaData(url);
+
+    const screenshotsDir = join(outputDir, "screenshots");
+    const dataDir = join(outputDir, "data");
+    await mkdir(screenshotsDir, { recursive: true });
+    await mkdir(dataDir, { recursive: true });
+
+    const siteWidePath = join(dataDir, "site-wide.json");
+    await writeFile(siteWidePath, JSON.stringify(result.siteWide, null, 2), "utf8");
+
     console.log("\n=== Result ===");
-    console.log("outputDir:", result.outputDir);
-    console.log("siteWide JSON:", result.siteWide);
+    console.log("outputDir:", outputDir);
+    console.log("siteWide JSON:", siteWidePath);
     console.log("breakpoints:", result.breakpoints.length);
+
     for (const bp of result.breakpoints) {
-      console.log(`  - ${bp.dims}: ${bp.json}  |  ${bp.screenshot}`);
+      const bpJsonPath = join(dataDir, `bp-${bp.dims}.json`);
+      await writeFile(bpJsonPath, JSON.stringify(bp.data, null, 2), "utf8");
+
+      const shotPath = join(screenshotsDir, `${bp.dims}.png`);
+      await writeFile(shotPath, bp.screenshot);
+
+      console.log(`  - ${bp.dims}: ${bpJsonPath}  |  ${shotPath}`);
     }
+
     console.log(`\nDone in ${((Date.now() - start) / 1000).toFixed(1)}s`);
   } catch (err) {
     console.error("collectQaData failed:", err);
