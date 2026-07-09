@@ -1,117 +1,73 @@
-import { put } from "@vercel/blob";
-import { db } from "../db/drizzle";
-import { qaSessions, qaBreakpoints, qaImages } from "../db/schema";
-import {
-  slugFromUrl,
-  timestamp,
-  type QaCollectionResult,
-  type QaBreakpointResult,
-} from "./automation";
+import { put, getDownloadUrl } from "@vercel/blob";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db/drizzle";
+import { qaBreakpoints, qaRuns } from "@/lib/db/schema";
+import type { QaCollectionResult } from "./automation";
+import { slugFromUrl, timestamp } from "./automation";
 
-interface SiteWideImage {
-  src: string;
-  naturalWidth: number;
-  naturalHeight: number;
-  alt: string;
-  visible: boolean;
-  selector: string;
-  xpath: string;
+export interface SaveQaResultOutput {
+  runId: number;
+  run: typeof qaRuns.$inferSelect;
+  breakpoints: (typeof qaBreakpoints.$inferSelect)[];
 }
 
-async function uploadScreenshot(
-  slug: string,
-  dims: string,
-  screenshot: Buffer,
-): Promise<string> {
-  const ts = timestamp();
-  const { url } = await put(`qa/${slug}/${dims}_${ts}.png`, screenshot, {
-    access: "private",
-    contentType: "image/png",
-  });
-  return url;
-}
-
-function isBroken(img: SiteWideImage): boolean {
-  return (
-    img.naturalWidth === 0 &&
-    img.naturalHeight === 0 &&
-    !!img.src &&
-    !img.src.endsWith(".svg")
-  );
-}
-
-export async function saveQaRun(
-  url: string,
+export async function saveQaResultToDb(
   result: QaCollectionResult,
-): Promise<number> {
-  const slug = slugFromUrl(url);
+): Promise<SaveQaResultOutput> {
+  const site = result.siteWide as Record<string, unknown>;
 
-  const [session] = await db
-    .insert(qaSessions)
+  const [run] = await db
+    .insert(qaRuns)
     .values({
-      url,
-      siteSlug: slug,
-      status: "completed",
-      siteWideData: result.siteWide,
+      url: site.url as string,
+      siteTitle: site.title as string,
+      siteFavicon: (site.favicon as string) ?? null,
+      siteHeadings: site.headings,
+      siteImages: site.images,
+      siteLinks: site.links,
+      siteHeadingInversion: site.headingInversion,
+      siteBrokenImages: site.brokenImages,
+      siteLinkTransition: (site.linkTransition as string) ?? null,
+      siteOverflows: site.overflows,
+      siteSections: site.sections,
     })
-    .returning({ id: qaSessions.id });
+    .returning({ id: qaRuns.id });
+
+  const slug = slugFromUrl(site.url as string);
+  const ts = timestamp();
 
   for (const bp of result.breakpoints) {
-    const [w, h] = bp.dims.split("x").map(Number);
+    const bpData = bp.data as Record<string, unknown>;
+    const viewport = bpData.viewport as Record<string, unknown>;
 
-    const blobUrl = await uploadScreenshot(slug, bp.dims, bp.screenshot);
+    const blobPath = `${slug}/${ts}/${bp.dims}.png`;
+    const blob = await put(blobPath, bp.screenshot, {
+      access: "private",
+      contentType: "image/png",
+    });
 
-    const [breakpoint] = await db
-      .insert(qaBreakpoints)
-      .values({
-        sessionId: session.id,
-        dims: bp.dims,
-        category: bp.category,
-        width: w,
-        height: h,
-        screenshotBlobUrl: blobUrl,
-        data: bp.data,
-      })
-      .returning({ id: qaBreakpoints.id });
+    const screenshotUrl = await getDownloadUrl(blob.url);
 
-    const bpData = bp.data as Record<string, unknown> | undefined;
-    const bpImages = bpData?.images as SiteWideImage[] | undefined;
-    if (bpImages && Array.isArray(bpImages)) {
-      for (const img of bpImages) {
-        await db.insert(qaImages).values({
-          sessionId: session.id,
-          breakpointId: breakpoint.id,
-          src: img.src || "",
-          alt: img.alt || "",
-          naturalWidth: img.naturalWidth || 0,
-          naturalHeight: img.naturalHeight || 0,
-          visible: img.visible ?? false,
-          broken: isBroken(img),
-          selector: img.selector || "",
-          xpath: img.xpath || "",
-        });
-      }
-    }
+    await db.insert(qaBreakpoints).values({
+      runId: run.id,
+      dims: bp.dims,
+      category: bp.category,
+      width: viewport.width as number,
+      height: viewport.height as number,
+      overflows: bpData.overflows,
+      hiddenSections: bpData.hiddenSections,
+      hamburgerDetected: (bpData.hamburgerDetected as boolean) ?? false,
+      hamburgerLinks: bpData.hamburgerLinks,
+      sectionBounds: bpData.sectionBounds,
+      screenshotBlobUrl: screenshotUrl,
+    });
   }
 
-  const siteWide = result.siteWide as Record<string, unknown>;
-  const siteImages = siteWide?.images as SiteWideImage[] | undefined;
-  if (siteImages && Array.isArray(siteImages)) {
-    for (const img of siteImages) {
-      await db.insert(qaImages).values({
-        sessionId: session.id,
-        breakpointId: null,
-        src: img.src || "",
-        alt: img.alt || "",
-        naturalWidth: img.naturalWidth || 0,
-        naturalHeight: img.naturalHeight || 0,
-        visible: img.visible ?? false,
-        broken: isBroken(img),
-        selector: img.selector || "",
-        xpath: img.xpath || "",
-      });
-    }
-  }
+  const [savedRun] = await db.select().from(qaRuns).where(eq(qaRuns.id, run.id));
+  const savedBreakpoints = await db
+    .select()
+    .from(qaBreakpoints)
+    .where(eq(qaBreakpoints.runId, run.id));
 
-  return session.id;
+  return { runId: run.id, run: savedRun, breakpoints: savedBreakpoints };
 }

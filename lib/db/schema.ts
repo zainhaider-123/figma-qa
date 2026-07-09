@@ -8,45 +8,36 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
-export const qaSessions = pgTable("qa_sessions", {
+export const qaRuns = pgTable("qa_runs", {
   id: serial("id").primaryKey(),
   url: text("url").notNull(),
-  siteSlug: text("site_slug").notNull(),
-  status: text("status").notNull().default("completed"),
-  siteWideData: jsonb("site_wide_data").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  siteTitle: text("site_title"),
+  siteFavicon: text("site_favicon"),
+  siteHeadings: jsonb("site_headings"),
+  siteImages: jsonb("site_images"),
+  siteLinks: jsonb("site_links"),
+  siteHeadingInversion: jsonb("site_heading_inversion"),
+  siteBrokenImages: jsonb("site_broken_images"),
+  siteLinkTransition: text("site_link_transition"),
+  siteOverflows: jsonb("site_overflows"),
+  siteSections: jsonb("site_sections"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const qaBreakpoints = pgTable("qa_breakpoints", {
   id: serial("id").primaryKey(),
-  sessionId: integer("session_id")
-    .notNull()
-    .references(() => qaSessions.id, { onDelete: "cascade" }),
+  runId: integer("run_id")
+    .references(() => qaRuns.id)
+    .notNull(),
   dims: text("dims").notNull(),
   category: text("category").notNull(),
   width: integer("width").notNull(),
   height: integer("height").notNull(),
-  screenshotBlobUrl: text("screenshot_blob_url").notNull(),
-  data: jsonb("data").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const qaImages = pgTable("qa_images", {
-  id: serial("id").primaryKey(),
-  sessionId: integer("session_id")
-    .notNull()
-    .references(() => qaSessions.id, { onDelete: "cascade" }),
-  breakpointId: integer("breakpoint_id").references(
-    () => qaBreakpoints.id,
-    { onDelete: "set null" },
-  ),
-  src: text("src").notNull(),
-  alt: text("alt").notNull().default(""),
-  naturalWidth: integer("natural_width").notNull().default(0),
-  naturalHeight: integer("natural_height").notNull().default(0),
-  visible: boolean("visible").notNull().default(false),
-  broken: boolean("broken").notNull().default(false),
-  selector: text("selector").notNull().default(""),
-  xpath: text("xpath").notNull().default(""),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  overflows: jsonb("overflows"),
+  hiddenSections: jsonb("hidden_sections"),
+  hamburgerDetected: boolean("hamburger_detected").default(false),
+  hamburgerLinks: jsonb("hamburger_links"),
+  sectionBounds: jsonb("section_bounds"),
+  screenshotBlobUrl: text("screenshot_blob_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

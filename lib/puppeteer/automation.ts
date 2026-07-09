@@ -1,5 +1,5 @@
 import puppeteer, { type Page } from "puppeteer-core";
-import { getChromiumPath } from "@/lib/browser/index";
+import { getChromiumPath } from "@/lib/browser";
 import { BREAKPOINTS } from "./breakpoints";
 
 export type BreakpointCategory = "desktop" | "ipad" | "mobile";
