@@ -9,8 +9,7 @@
     "lint": "biome check",
     "format": "biome format --write",
     "postinstall": "node scripts/postinstall.mjs",
-    "test:qa-local": "tsx scripts/test-puppeteer.ts",
-    "test:qa-db": "tsx scripts/test-save-db.ts"
+    "test:qa-local": "tsx scripts/test-puppeteer.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

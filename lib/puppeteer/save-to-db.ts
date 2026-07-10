@@ -1,14 +1,14 @@
-import { put, getDownloadUrl } from "@vercel/blob";
+import { getDownloadUrl, put } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/drizzle";
-import { qaBreakpoints, qaRuns } from "@/lib/db/schema";
+import { siteQaBreakpoints, siteQaRuns } from "@/lib/db/schema";
 import type { QaCollectionResult } from "./automation";
 import { slugFromUrl, timestamp } from "./automation";
 
 export interface SaveQaResultOutput {
   runId: number;
-  run: typeof qaRuns.$inferSelect;
-  breakpoints: (typeof qaBreakpoints.$inferSelect)[];
+  run: typeof siteQaRuns.$inferSelect;
+  breakpoints: (typeof siteQaBreakpoints.$inferSelect)[];
 }
 
 export async function saveQaResultToDb(
@@ -17,7 +17,7 @@ export async function saveQaResultToDb(
   const site = result.siteWide as Record<string, unknown>;
 
   const [run] = await db
-    .insert(qaRuns)
+    .insert(siteQaRuns)
     .values({
       url: site.url as string,
       siteTitle: site.title as string,
@@ -31,7 +31,7 @@ export async function saveQaResultToDb(
       siteOverflows: site.overflows,
       siteSections: site.sections,
     })
-    .returning({ id: qaRuns.id });
+    .returning({ id: siteQaRuns.id });
 
   const slug = slugFromUrl(site.url as string);
   const ts = timestamp();
@@ -48,7 +48,7 @@ export async function saveQaResultToDb(
 
     const screenshotUrl = await getDownloadUrl(blob.url);
 
-    await db.insert(qaBreakpoints).values({
+    await db.insert(siteQaBreakpoints).values({
       runId: run.id,
       dims: bp.dims,
       category: bp.category,
@@ -63,11 +63,14 @@ export async function saveQaResultToDb(
     });
   }
 
-  const [savedRun] = await db.select().from(qaRuns).where(eq(qaRuns.id, run.id));
+  const [savedRun] = await db
+    .select()
+    .from(siteQaRuns)
+    .where(eq(siteQaRuns.id, run.id));
   const savedBreakpoints = await db
     .select()
-    .from(qaBreakpoints)
-    .where(eq(qaBreakpoints.runId, run.id));
+    .from(siteQaBreakpoints)
+    .where(eq(siteQaBreakpoints.runId, run.id));
 
   return { runId: run.id, run: savedRun, breakpoints: savedBreakpoints };
 }

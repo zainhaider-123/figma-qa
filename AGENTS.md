@@ -14,7 +14,6 @@ pnpm build               # production build
 pnpm lint                # Biome check
 pnpm format              # Biome format --write
 pnpm test:qa-local       # run Puppeteer QA collection against a live site
-pnpm test:qa-db          # run DB save test (script not yet implemented)
 ```
 
 ## Running test-puppeteer.ts
@@ -30,16 +29,41 @@ node --experimental-strip-types scripts/test-puppeteer.ts <url> [output-dir]
 ## Architecture
 
 ```
-app/                  # Next.js App Router (currently minimal placeholder)
+app/
+  api/auth/[...all]/  # better-auth API route handler
+  globals.css         # Tailwind v4 + CSS variables
+  layout.tsx          # Root layout (fonts, metadata)
+  page.tsx            # Home page placeholder
 lib/
-  ai/                 # OpenRouter provider, QA prompt, AI tool definitions
-  browser/index.ts    # Chromium download/caching (Vercel + fallback URL)
-  puppeteer/          # Core QA engine
+  ai/
+    provider.ts       # OpenRouter AI SDK provider setup
+    promts.ts         # QA system prompt for AI-driven design comparison
+    tools/
+      generate-pdf.ts # AI tool — generate QA report PDF
+      get-frame.ts    # AI tool — fetch Figma frame data
+      get-live-site.ts# AI tool — collect live site DOM data via Puppeteer
+  auth.ts             # better-auth server config (PostgreSQL adapter)
+  auth-client.ts      # better-auth client instance
+  browser.ts          # Chromium download/caching (Vercel + fallback URL)
+  db/
+    drizzle.ts        # Drizzle ORM connection (Neon PostgreSQL)
+    schema.ts         # Database schema definitions
+    migrations/       # Drizzle migration files
+  figma/
+    index.ts          # Figma API client (REST + MCP)
+    get-frame.ts      # Fetch Figma frame design data
+    save-to-db.ts     # Persist Figma design data to PostgreSQL
+  pdfGenerator/
+    index.ts          # PDF report generation from QA findings
+  puppeteer/
     automation.ts     # collectQaData() — opens site, collects DOM data + screenshots
     breakpoints.ts    # 18 responsive breakpoints (desktop, ipad, mobile)
+    index.ts          # Puppeteer module exports
+    save-to-db.ts     # Persist Puppeteer QA data to PostgreSQL
     example.sh        # Original bash reference (uses agent-browser CLI), not run directly
-  db/                 # Drizzle ORM + PostgreSQL (schema currently empty)
-components/ui/        # shadcn/ui components
+  types.ts            # Shared TypeScript type definitions
+  utils.ts            # Shared utility functions (cn(), etc.)
+components/ui/        # shadcn/ui components (button, etc.)
 scripts/
   postinstall.mjs     # Creates public/chromium-pack.tar on install (non-critical)
   test-puppeteer.ts   # CLI harness for collectQaData
@@ -49,7 +73,7 @@ scripts/
 
 - Uses `puppeteer-core` + `@sparticuz/chromium-min` (serverless-safe, Vercel-compatible)
 - `postinstall` creates `public/chromium-pack.tar` from the chromium package. Failure is non-fatal.
-- In production (Vercel), chromium is fetched from `/<project-url>/chromium-pack.tar`; locally it falls back to a GitHub URL. See `lib/browser/index.ts`.
+- In production (Vercel), chromium is fetched from `/<project-url>/chromium-pack.tar`; locally it falls back to a GitHub URL. See `lib/browser.ts`.
 - The `example.sh` file is a historical reference only — it uses the `agent-browser` CLI, not Puppeteer. The Puppeteer port is in `automation.ts`.
 
 ## Database
