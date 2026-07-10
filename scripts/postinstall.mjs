@@ -1,7 +1,7 @@
 import { execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = dirname(__dirname);
@@ -22,7 +22,7 @@ async function main() {
 
     if (!existsSync(binDir)) {
       console.log(
-        "⚠️  Chromium bin directory not found, skipping archive creation"
+        "⚠️  Chromium bin directory not found, skipping archive creation",
       );
       return;
     }
@@ -36,10 +36,13 @@ async function main() {
     console.log("   Output:", outputPath);
 
     // Tar the contents of bin/ directly (without bin prefix)
-    execSync(`mkdir -p ${publicDir} && tar -cf "${outputPath}" -C "${binDir}" .`, {
-      stdio: "inherit",
-      cwd: projectRoot,
-    });
+    execSync(
+      `mkdir -p ${publicDir} && tar -cf "${outputPath}" -C "${binDir}" .`,
+      {
+        stdio: "inherit",
+        cwd: projectRoot,
+      },
+    );
 
     console.log("✅ Chromium archive created successfully!");
   } catch (error) {

@@ -1,4 +1,3 @@
-
 // URL to the Chromium binary package hosted in /public, if not in production, use a fallback URL
 // alternatively, you can host the chromium-pack.tar file elsewhere and update the URL below
 const CHROMIUM_PACK_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL

@@ -1,6 +1,5 @@
 import type { Breakpoint } from "@types";
 
-
 export const BREAKPOINTS: Breakpoint[] = [
   { width: 1280, height: 720, category: "desktop" },
   { width: 1366, height: 768, category: "desktop" },

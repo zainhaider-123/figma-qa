@@ -1,17 +1,17 @@
-export { collectQaData, slugFromUrl, timestamp, dimsLabel } from "./automation";
 export type {
-  BreakpointCategory,
   Breakpoint,
+  BreakpointCategory,
   QaBreakpointResult,
   QaCollectionResult,
 } from "./automation";
-export { saveQaResultToDb } from "./save-to-db";
+export { collectQaData, dimsLabel, slugFromUrl, timestamp } from "./automation";
 export type { SaveQaResultOutput } from "./save-to-db";
+export { saveQaResultToDb } from "./save-to-db";
 
-import { collectQaData } from "./automation";
-import { saveQaResultToDb } from "./save-to-db";
 import type { QaCollectionResult } from "./automation";
+import { collectQaData } from "./automation";
 import type { SaveQaResultOutput } from "./save-to-db";
+import { saveQaResultToDb } from "./save-to-db";
 
 export async function collectAndSave(url: string): Promise<{
   result: QaCollectionResult;

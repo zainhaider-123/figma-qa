@@ -11,14 +11,21 @@
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-// @ts-expect-error - .ts extension required by Node --experimental-strip-types
-import { collectQaData, slugFromUrl, timestamp } from "../lib/puppeteer/automation.ts";
+import {
+  collectQaData,
+  slugFromUrl,
+  timestamp,
+} from "../lib/puppeteer/automation.ts";
 
 async function main() {
   const url = process.argv[2] || "https://example.com";
   const outputDir =
     process.argv[3] ||
-    join(process.cwd(), "figma-design-qa-reports", `${timestamp()}_${slugFromUrl(url)}`);
+    join(
+      process.cwd(),
+      "figma-design-qa-reports",
+      `${timestamp()}_${slugFromUrl(url)}`,
+    );
 
   console.log("Running collectQaData against:", url);
   const start = Date.now();
@@ -32,7 +39,11 @@ async function main() {
     await mkdir(dataDir, { recursive: true });
 
     const siteWidePath = join(dataDir, "site-wide.json");
-    await writeFile(siteWidePath, JSON.stringify(result.siteWide, null, 2), "utf8");
+    await writeFile(
+      siteWidePath,
+      JSON.stringify(result.siteWide, null, 2),
+      "utf8",
+    );
 
     console.log("\n=== Result ===");
     console.log("outputDir:", outputDir);

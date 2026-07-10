@@ -37,8 +37,6 @@ export interface QaCollectionResult {
  * function arguments instead of shell-string-interpolated into the source.
  */
 
-
-
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /** Slugify a URL's hostname the same way the bash sed did: strip scheme + www + path. */
@@ -576,9 +574,7 @@ async function collectBreakpoint(page: Page, bp: Breakpoint): Promise<unknown> {
  * Returns collected data in memory — screenshots as Buffers, JSON data as objects.
  * The caller is responsible for persisting results to disk.
  */
-export async function collectQaData(
-  url: string,
-): Promise<QaCollectionResult> {
+export async function collectQaData(url: string): Promise<QaCollectionResult> {
   if (!url) throw new Error("collectQaData: url is required");
 
   console.log("=== QA Collection Start ===");
@@ -632,11 +628,16 @@ export async function collectQaData(
       await scrollToBottom(page);
       await wait(1500);
 
-      const screenshot = await page.screenshot({ fullPage: true }) as Buffer;
+      const screenshot = (await page.screenshot({ fullPage: true })) as Buffer;
 
       const bpData = await collectBreakpoint(page, bp);
 
-      breakpoints.push({ dims, category: bp.category, data: bpData, screenshot });
+      breakpoints.push({
+        dims,
+        category: bp.category,
+        data: bpData,
+        screenshot,
+      });
     }
 
     console.log("[4/4] Closing browser...");
@@ -645,7 +646,7 @@ export async function collectQaData(
 
     return { siteWide, breakpoints };
   } finally {
-    await browser.close().catch(() => { });
+    await browser.close().catch(() => {});
   }
 }
 

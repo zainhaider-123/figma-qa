@@ -1,8 +1,8 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { genericOAuth } from "better-auth/plugins";
-import { user, session, account, verification } from "@/lib/db/schema";
 import { db } from "@/lib/db/drizzle";
+import { account, session, user, verification } from "@/lib/db/schema";
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -35,7 +35,7 @@ export const auth = betterAuth({
           clientSecret: process.env.FIGMA_CLIENT_SECRET as string,
           authorizationUrl: "https://www.figma.com/oauth",
           tokenUrl: "https://api.figma.com/v1/oauth/token",
-          scopes: ["files:read"],
+          scopes: ["file_content:read", "current_user:read"],
           getUserInfo: async (tokens) => {
             const response = await fetch("https://api.figma.com/v1/me", {
               headers: {

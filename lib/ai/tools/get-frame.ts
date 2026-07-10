@@ -15,7 +15,13 @@ export const getFrameTool = tool({
       ),
   }),
   execute: async ({ url }) => {
-    const { saved } = await getAndSaveFrame(url);
-    return saved;
+    try {
+      const { saved } = await getAndSaveFrame(url);
+      return saved;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[get-frame tool error]", msg, e);
+      return { error: msg };
+    }
   },
 });
