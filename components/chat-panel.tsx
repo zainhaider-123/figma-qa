@@ -1,7 +1,15 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { Bug, FileText, Globe, Loader2, Paintbrush, Send } from "lucide-react";
+import {
+  Brain,
+  Bug,
+  FileText,
+  Globe,
+  Loader2,
+  Paintbrush,
+  Send,
+} from "lucide-react";
 import { useState } from "react";
 import { ProcessTimeline } from "@/components/process-timeline";
 import { Button } from "@/components/ui/button";
@@ -151,39 +159,85 @@ export function ChatPanel() {
                         {part.text}
                       </div>
                     );
-                  case "tool-get-frame":
+                  case "reasoning": {
+                    const reasoningPart = part as unknown as {
+                      text: string;
+                    };
+                    return (
+                      <details
+                        key={`${message.id}-${i}`}
+                        className="mt-2 text-xs text-muted-foreground"
+                      >
+                        <summary className="flex items-center gap-1.5 cursor-pointer font-medium select-none">
+                          <Brain className="size-3" />
+                          Thinking...
+                        </summary>
+                        <div className="mt-1 pl-4 border-l-2 border-muted whitespace-pre-wrap">
+                          {reasoningPart.text}
+                        </div>
+                      </details>
+                    );
+                  }
+                  case "tool-get-frame": {
+                    const toolPart = part as unknown as {
+                      toolCallId: string;
+                      state: string;
+                      input?: unknown;
+                      output?: unknown;
+                      errorText?: string;
+                    };
                     return (
                       <ToolCallCard
-                        key={`${message.id}-${i}`}
+                        key={toolPart.toolCallId}
                         icon={<Paintbrush className="size-3.5" />}
                         title="get-frame"
-                        args={(part as any).args ?? (part as any).input}
-                        result={(part as any).result}
-                        state={(part as any).state ?? "output-available"}
+                        input={toolPart.input}
+                        output={toolPart.output}
+                        state={toolPart.state}
+                        errorText={toolPart.errorText}
                       />
                     );
-                  case "tool-get-live-site":
+                  }
+                  case "tool-get-live-site": {
+                    const toolPart = part as unknown as {
+                      toolCallId: string;
+                      state: string;
+                      input?: unknown;
+                      output?: unknown;
+                      errorText?: string;
+                    };
                     return (
                       <ToolCallCard
-                        key={`${message.id}-${i}`}
+                        key={toolPart.toolCallId}
                         icon={<Globe className="size-3.5" />}
                         title="get-live-site"
-                        args={(part as any).args ?? (part as any).input}
-                        result={(part as any).result}
-                        state={(part as any).state ?? "output-available"}
+                        input={toolPart.input}
+                        output={toolPart.output}
+                        state={toolPart.state}
+                        errorText={toolPart.errorText}
                       />
                     );
-                  case "tool-generate-pdf":
+                  }
+                  case "tool-generate-pdf": {
+                    const toolPart = part as unknown as {
+                      toolCallId: string;
+                      state: string;
+                      input?: unknown;
+                      output?: unknown;
+                      errorText?: string;
+                    };
                     return (
                       <ToolCallCard
-                        key={`${message.id}-${i}`}
+                        key={toolPart.toolCallId}
                         icon={<FileText className="size-3.5" />}
                         title="generate-pdf"
-                        args={(part as any).args ?? (part as any).input}
-                        result={(part as any).result}
-                        state={(part as any).state ?? "output-available"}
+                        input={toolPart.input}
+                        output={toolPart.output}
+                        state={toolPart.state}
+                        errorText={toolPart.errorText}
                       />
                     );
+                  }
                   default:
                     return (
                       <pre
@@ -196,6 +250,7 @@ export function ChatPanel() {
                 }
               }) ?? (
                 <div className="whitespace-pre-wrap">
+                  {/* biome-ignore lint/suspicious/noExplicitAny: legacy content fallback */}
                   {(message as any).content ?? ""}
                 </div>
               )}
@@ -250,15 +305,17 @@ function getStatusBadge(state?: string) {
 function ToolCallCard({
   icon,
   title,
-  args,
-  result,
+  input,
+  output,
   state,
+  errorText,
 }: {
   icon: React.ReactNode;
   title: string;
-  args?: unknown;
-  result?: unknown;
+  input?: unknown;
+  output?: unknown;
   state?: string;
+  errorText?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -281,19 +338,27 @@ function ToolCallCard({
       </button>
       {expanded && (
         <div className="px-3 pb-3 space-y-2 text-xs font-mono">
-          {args != null && (
+          {input != null && (
             <div>
               <div className="text-muted-foreground mb-0.5">Arguments</div>
               <pre className="rounded-lg bg-muted p-2 overflow-x-auto">
-                {JSON.stringify(args, null, 2)}
+                {JSON.stringify(input, null, 2)}
               </pre>
             </div>
           )}
-          {result != null && (
+          {output != null && (
             <div>
               <div className="text-muted-foreground mb-0.5">Result</div>
               <pre className="rounded-lg bg-muted p-2 overflow-x-auto max-h-40">
-                {JSON.stringify(result, null, 2)}
+                {JSON.stringify(output, null, 2)}
+              </pre>
+            </div>
+          )}
+          {errorText != null && (
+            <div>
+              <div className="text-muted-foreground mb-0.5">Error</div>
+              <pre className="rounded-lg bg-destructive/10 text-destructive p-2 overflow-x-auto">
+                {errorText}
               </pre>
             </div>
           )}

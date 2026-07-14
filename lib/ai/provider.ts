@@ -5,4 +5,4 @@ const openrouter = createOpenRouter({
 });
 
 /** Pre-configured OpenRouter model for the QA agent. */
-export const qaModel = openrouter.chat("tencent/hy3:free");
+export const qaModel = openrouter.chat("xiaomi/mimo-v2.5");

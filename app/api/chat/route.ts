@@ -49,7 +49,10 @@ function createProgressStream(): {
   };
 }
 
-function mergeTextStreams<T>(a: ReadableStream<T>, b: ReadableStream<T>): ReadableStream<T> {
+function mergeTextStreams<T>(
+  a: ReadableStream<T>,
+  b: ReadableStream<T>,
+): ReadableStream<T> {
   return new ReadableStream<T>({
     async start(controller) {
       const [readerA, readerB] = [a.getReader(), b.getReader()];
@@ -86,11 +89,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const body = (await request.json()) as {
-    messages: Array<Record<string, unknown>>;
-  };
-  const messages = body.messages ?? [];
-
+  const { messages } = await request.json();
   const progress = createProgressStream();
   setProgressWriter(progress.write);
 
