@@ -3,6 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { Bug, FileText, Globe, Loader2, Paintbrush, Send } from "lucide-react";
 import { useState } from "react";
+import { ProcessTimeline } from "@/components/process-timeline";
 import { Button } from "@/components/ui/button";
 
 interface UrlFormState {
@@ -103,6 +104,9 @@ export function ChatPanel() {
         </form>
       </div>
 
+      {/* Process Timeline */}
+      <ProcessTimeline messages={messages} status={status} error={error} />
+
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {!hasStarted && (
@@ -155,6 +159,7 @@ export function ChatPanel() {
                         title="get-frame"
                         args={(part as any).args ?? (part as any).input}
                         result={(part as any).result}
+                        state={(part as any).state ?? "output-available"}
                       />
                     );
                   case "tool-get-live-site":
@@ -165,6 +170,7 @@ export function ChatPanel() {
                         title="get-live-site"
                         args={(part as any).args ?? (part as any).input}
                         result={(part as any).result}
+                        state={(part as any).state ?? "output-available"}
                       />
                     );
                   case "tool-generate-pdf":
@@ -175,6 +181,7 @@ export function ChatPanel() {
                         title="generate-pdf"
                         args={(part as any).args ?? (part as any).input}
                         result={(part as any).result}
+                        state={(part as any).state ?? "output-available"}
                       />
                     );
                   default:
@@ -219,18 +226,43 @@ export function ChatPanel() {
   );
 }
 
+function getStatusBadge(state?: string) {
+  if (state === "input-streaming" || state === "input-available") {
+    return {
+      text: "Executing...",
+      className:
+        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+    };
+  }
+  if (state === "output-error") {
+    return {
+      text: "Error",
+      className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    };
+  }
+  return {
+    text: "Done",
+    className:
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  };
+}
+
 function ToolCallCard({
   icon,
   title,
   args,
   result,
+  state,
 }: {
   icon: React.ReactNode;
   title: string;
   args?: unknown;
   result?: unknown;
+  state?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  const statusBadge = getStatusBadge(state);
 
   return (
     <div className="mt-2 rounded-xl border border-border bg-background/80 overflow-hidden">
@@ -241,8 +273,10 @@ function ToolCallCard({
       >
         {icon}
         <span className="font-mono">{title}</span>
-        <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-          done
+        <span
+          className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusBadge.className}`}
+        >
+          {statusBadge.text}
         </span>
       </button>
       {expanded && (

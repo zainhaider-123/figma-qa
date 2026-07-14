@@ -1,5 +1,6 @@
 import puppeteer, { type Page } from "puppeteer-core";
 import { getChromiumPath } from "@/lib/browser";
+import { emitProgress } from "@/lib/progress";
 import { BREAKPOINTS } from "./breakpoints";
 
 export type BreakpointCategory = "desktop" | "ipad" | "mobile";
@@ -577,8 +578,8 @@ async function collectBreakpoint(page: Page, bp: Breakpoint): Promise<unknown> {
 export async function collectQaData(url: string): Promise<QaCollectionResult> {
   if (!url) throw new Error("collectQaData: url is required");
 
-  console.log("=== QA Collection Start ===");
-  console.log("Site:", url);
+  emitProgress("=== QA Collection Start ===");
+  emitProgress(`Site: ${url}`);
 
   const executablePath = await getChromiumPath();
 
@@ -598,7 +599,7 @@ export async function collectQaData(url: string): Promise<QaCollectionResult> {
   try {
     const page = await browser.newPage();
 
-    console.log("\n[1/4] Opening site at 1920x1080...");
+    emitProgress("[1/4] Opening site at 1920x1080...");
 
     await page.evaluateOnNewDocument(() => {
       (window as any).__name = (target: any, value: string) => {
@@ -610,17 +611,17 @@ export async function collectQaData(url: string): Promise<QaCollectionResult> {
     await page.goto(url, { waitUntil: "networkidle0", timeout: 60_000 });
     await page.setViewport({ width: 1920, height: 1080 });
 
-    console.log("        Scrolling to bottom to trigger lazy content...");
+    emitProgress("        Scrolling to bottom to trigger lazy content...");
     await scrollToBottom(page);
     await wait(2000);
 
-    console.log("[2/4] Collecting site-wide data...");
+    emitProgress("[2/4] Collecting site-wide data...");
     const siteWide = await collectSiteWide(page);
 
-    console.log("[3/4] Testing responsive breakpoints...");
+    emitProgress("[3/4] Testing responsive breakpoints...");
     for (const bp of BREAKPOINTS) {
       const dims = dimsLabel(bp);
-      console.log(`  → ${dims} (${bp.category})`);
+      emitProgress(`  → ${dims} (${bp.category})`);
 
       await page.setViewport({ width: bp.width, height: bp.height });
       await wait(1500);
@@ -640,9 +641,9 @@ export async function collectQaData(url: string): Promise<QaCollectionResult> {
       });
     }
 
-    console.log("[4/4] Closing browser...");
+    emitProgress("[4/4] Closing browser...");
 
-    console.log("\n=== QA Collection Complete ===");
+    emitProgress("=== QA Collection Complete ===");
 
     return { siteWide, breakpoints };
   } finally {
