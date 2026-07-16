@@ -12,6 +12,7 @@
     "test:qa-local": "tsx scripts/test-puppeteer.ts"
   },
   "dependencies": {
+    "@ai-sdk/devtools": "^1.0.5",
     "@ai-sdk/react": "^4.0.20",
     "@base-ui/react": "^1.6.0",
     "@openrouter/ai-sdk-provider": "^3.0.0",
