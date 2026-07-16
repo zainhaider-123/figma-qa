@@ -4,6 +4,7 @@ import {
   isStepCount,
   streamText,
   toUIMessageStream,
+  registerTelemetry
 } from "ai";
 import { qaPrompt } from "@/lib/ai/prompts";
 import { qaModel } from "@/lib/ai/provider";
@@ -12,6 +13,9 @@ import { getFrameTool } from "@/lib/ai/tools/get-frame";
 import { getLiveSite } from "@/lib/ai/tools/get-live-site";
 import { auth } from "@/lib/auth";
 import { setProgressWriter } from "@/lib/progress";
+import { DevToolsTelemetry } from '@ai-sdk/devtools';
+
+registerTelemetry(DevToolsTelemetry());
 
 function createProgressStream(): {
   stream: ReadableStream<{ type: string; id: string; delta: string }>;

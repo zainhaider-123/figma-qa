@@ -3,15 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NEXT_DEBUG=1 next dev 2>&1 | tee nextjs-debug.log",
+    "dev": "node api.js && NEXT_DEBUG=1 next dev 2>&1 | tee nextjs-debug.log",
     "build": "next build",
-    "start": "next start",
+    "start": "node api.js && next start",
     "lint": "biome check",
     "format": "biome format --write",
     "postinstall": "node scripts/postinstall.mjs",
     "test:qa-local": "tsx scripts/test-puppeteer.ts"
   },
   "dependencies": {
+    "@ai-sdk/devtools": "^1.0.5",
     "@ai-sdk/react": "^4.0.20",
     "@base-ui/react": "^1.6.0",
     "@openrouter/ai-sdk-provider": "^3.0.0",
